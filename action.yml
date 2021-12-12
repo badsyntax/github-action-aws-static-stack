@@ -122,13 +122,14 @@ runs:
         CFDistributionRootId: ${{ steps.update-stack.outputs.CFDistributionRootId }}
         CFDistributionPreviewId: ${{ steps.update-stack.outputs.CFDistributionPreviewId }}
 
-    - uses: badsyntax/github-action-aws-cloudfront@064152fefc6fbfa7d66ff99c6a9a4efe019d2e6a
+    - uses: badsyntax/github-action-aws-cloudfront@f90772374f4cb3a51ccfc47465955866435c7166
       name: Invalidate CloudFront Cache
       id: invalidate-cloudfront-cache
       with:
         distributionId: ${{ steps.cloudfront-distribution-id.outputs.distributionId }}
         awsRegion: ${{ inputs.awsRegion }}
         originPrefix: ${{ steps.prefix.outputs.prefix }}
+        includeOriginPrefix: ${{ github.event_name == 'pull_request' }}
         invalidatePaths: ${{ steps.sync-html-s3.outputs.S3SyncedFiles }}
         defaultRootObject: ${{ inputs.cloudFrontDefaultRootObject }}
 

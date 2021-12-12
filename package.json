@@ -5,8 +5,8 @@
   "description": "A GitHub Action to update your CloudFront distribution",
   "type": "module",
   "scripts": {
-    "format": "prettier --write '**/*.md'",
-    "format-check": "prettier --check '**/*.md'"
+    "format": "prettier --write '**/*.{json,svg,md,yml}'",
+    "format-check": "prettier --check '**/*.{json,svg,md,yml}'"
   },
   "engines": {
     "node": "^16",
