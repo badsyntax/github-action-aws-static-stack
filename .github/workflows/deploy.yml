@@ -32,7 +32,7 @@ jobs:
         name: Deploy Site
         with:
           cfStackName: 'badsyntax-github-action-example-aws-static-stack'
-          cfTemplate: './cloudformation/cloudformation-s3bucket-example.yml'
+          cfTemplate: './cloudformation/cloudformation-s3bucket-stack.yml'
           cfApplyChangeSet: ${{ github.event_name != 'repository_dispatch' }}
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           awsRegion: 'us-east-1'
