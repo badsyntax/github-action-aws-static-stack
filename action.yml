@@ -7,10 +7,10 @@ branding:
 inputs:
   cfStackName:
     required: true
-    description: 'The name of the Cloudformation stack to be created. For example: "example-com-static-cloudformation-stack"'
+    description: 'The name of the Cloudformation stack to be created. For example: example-com-static-cloudformation-stack'
   cfTemplate:
     required: true
-    description: 'The relative path to the CloudFormation stack template. For example: "./cloudformation/s3bucket_with_cloudfront.yml"'
+    description: 'The relative path to the CloudFormation stack template. For example: ./cloudformation/s3bucket_with_cloudfront.yml'
   cfApplyChangeSet:
     required: true
     description: 'Whether to apply the CloudFormation ChangeSet (if any)'
@@ -44,6 +44,9 @@ inputs:
   staticFilesGlob:
     required: true
     description: 'Glob pattern for immutable static files. For example: _next/**'
+  lambdaVersion:
+    required: true
+    description: 'The lambda version. Required to deploy a new lambda. You must update this if changing the lambda. For example: 1.0.0'
 runs:
   using: 'composite'
   steps:
@@ -76,7 +79,7 @@ runs:
           CloudFrontPreviewHosts=${{ inputs.cloudFrontPreviewHosts }}&
           CertificateARN=${{ inputs.certificateARN }}&
           CloudFrontDefaultRootObject=${{ inputs.cloudFrontDefaultRootObject }}&
-          LambdaVersion=1.0.0
+          LambdaVersion=${{ inputs.lambdaVersion }}
 
     - uses: badsyntax/github-action-aws-s3@9537cd6d2013140b1d4e11ff526c5d75084c01df
       name: Sync mutable HTML files to S3
@@ -119,22 +122,25 @@ runs:
         CFDistributionRootId: ${{ steps.update-stack.outputs.CFDistributionRootId }}
         CFDistributionPreviewId: ${{ steps.update-stack.outputs.CFDistributionPreviewId }}
 
-    - uses: badsyntax/github-action-aws-cloudfront@064152fefc6fbfa7d66ff99c6a9a4efe019d2e6a
+    - uses: badsyntax/github-action-aws-cloudfront@f90772374f4cb3a51ccfc47465955866435c7166
       name: Invalidate CloudFront Cache
       id: invalidate-cloudfront-cache
       with:
         distributionId: ${{ steps.cloudfront-distribution-id.outputs.distributionId }}
         awsRegion: ${{ inputs.awsRegion }}
         originPrefix: ${{ steps.prefix.outputs.prefix }}
+        includeOriginPrefix: ${{ github.event_name == 'pull_request' }}
         invalidatePaths: ${{ steps.sync-html-s3.outputs.S3SyncedFiles }}
         defaultRootObject: ${{ inputs.cloudFrontDefaultRootObject }}
 
     - uses: actions/github-script@v5
       with:
         script: |
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: '👋 Preview Website Deployed'
-          })
+          if (context.eventName === 'pull_request') {
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '👋 Preview Website Deployed'
+            })
+          }
