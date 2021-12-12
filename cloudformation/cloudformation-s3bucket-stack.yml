@@ -117,7 +117,7 @@ Resources:
         Origins:
           - DomainName: !GetAtt S3Bucket.DomainName
             Id: !Sub 's3-origin-${S3Bucket}'
-            OriginPath: '/preview'
+            OriginPath: ''
             S3OriginConfig:
               OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CFOriginAccessIdentity}'
         DefaultCacheBehavior:
@@ -180,8 +180,7 @@ Resources:
               const branchName = getBranchName(request);
               if (branchName) {
                 const path = request.uri === '/' ? ('/' + '${RootObject}') : request.uri;
-                // Note we're already forwarding to /preview via OriginPath
-                request.uri = '/' + branchName + path;
+                request.uri = '/preview/' + branchName + path;
               }
               callback(null, request);
             };
