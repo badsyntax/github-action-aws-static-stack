@@ -24,7 +24,7 @@ Please also read the following to understand what AWS Credentials you should use
 
 ### Step 1: Define your Stack
 
-Use the provided stack and place it somewhere in your repo, for example in location `./cloudformation/cloudformation-s3bucket-stack.yml`.
+Use the [provided stack](https://github.com/badsyntax/github-action-aws-static-stack/blob/master/cloudformation/cloudformation-s3bucket-stack.yml) and place it somewhere in your repo, for example in location `./cloudformation/cloudformation-s3bucket-stack.yml`.
 
 You are welcome to change the stack as long as you don't change the following outputs:
 
@@ -77,10 +77,11 @@ jobs:
           s3AllowedOrigins: 'https://example.com, https://*.preview.example.com'
           cloudFrontRootHosts: 'example.com'
           cloudFrontPreviewHosts: '*.preview.example.com'
-          cloudFrontDefaultRootObject: 'index.html'
+          cloudFrontDefaultRootObject: 'index'
           certificateARN: 'arn:aws:acm:us-east-1:0001112222:certificate/1234abc-1234-1234-abcd-12345'
           srcDir: './out'
           staticFilesGlob: 'css/**'
+          lambdaVersion: '1.0.0'
 ```
 
 ### Step 3: Deploy
@@ -109,6 +110,10 @@ Check the Action output for logs.
 If you need to see more verbose logs you can set `ACTIONS_STEP_DEBUG` to `true` as an Action Secret.
 
 Detailed stack logs can be found in CloudFormation in the AWS Console.
+
+## Creating Your Own AWS Static Stack
+
+This GitHub Action combines various other Actions and you can do the same if you require more flexibility. Refer to [`action.yaml`](https://github.com/badsyntax/github-action-aws-static-stack/blob/master/action.yml) for example usage of the various Actions.
 
 ## License
 

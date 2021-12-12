@@ -44,6 +44,9 @@ inputs:
   staticFilesGlob:
     required: true
     description: 'Glob pattern for immutable static files. For example: _next/**'
+  lambdaVersion:
+    required: true
+    description: 'The lambda version. Required to deploy a new lambda. You must update this if changing the lambda. For example: 1.0.0'
 runs:
   using: 'composite'
   steps:
@@ -76,7 +79,7 @@ runs:
           CloudFrontPreviewHosts=${{ inputs.cloudFrontPreviewHosts }}&
           CertificateARN=${{ inputs.certificateARN }}&
           CloudFrontDefaultRootObject=${{ inputs.cloudFrontDefaultRootObject }}&
-          LambdaVersion=1.0.0
+          LambdaVersion=${{ inputs.lambdaVersion }}
 
     - uses: badsyntax/github-action-aws-s3@9537cd6d2013140b1d4e11ff526c5d75084c01df
       name: Sync mutable HTML files to S3
@@ -132,9 +135,11 @@ runs:
     - uses: actions/github-script@v5
       with:
         script: |
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: '👋 Preview Website Deployed'
-          })
+          if (context.eventName === 'pull_request') {
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '👋 Preview Website Deployed'
+            })
+          }
