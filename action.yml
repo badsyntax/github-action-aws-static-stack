@@ -7,10 +7,10 @@ branding:
 inputs:
   cfStackName:
     required: true
-    description: 'The name of the Cloudformation stack to be created. For example: "example-com-static-cloudformation-stack"'
+    description: 'The name of the Cloudformation stack to be created. For example: example-com-static-cloudformation-stack'
   cfTemplate:
     required: true
-    description: 'The relative path to the CloudFormation stack template. For example: "./cloudformation/s3bucket_with_cloudfront.yml"'
+    description: 'The relative path to the CloudFormation stack template. For example: ./cloudformation/s3bucket_with_cloudfront.yml'
   cfApplyChangeSet:
     required: true
     description: 'Whether to apply the CloudFormation ChangeSet (if any)'
