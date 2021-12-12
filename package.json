@@ -1,0 +1,33 @@
+{
+  "name": "github-action-aws-static-stack",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A GitHub Action to update your CloudFront distribution",
+  "type": "module",
+  "scripts": {
+    "format": "prettier --write '**/*.md'",
+    "format-check": "prettier --check '**/*.md'"
+  },
+  "engines": {
+    "node": "^16",
+    "npm": "^8"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/badsyntax/github-action-aws-static-stack.git"
+  },
+  "keywords": [
+    "actions",
+    "node",
+    "setup",
+    "aws",
+    "cloudformation",
+    "s3",
+    "cloudfront"
+  ],
+  "author": "Richard Willis <willis.rh@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "prettier": "2.5.1"
+  }
+}

@@ -1,0 +1,139 @@
+name: 'AWS Static Stack'
+description: 'Deploy your static website to the AWS Edge using S3, CloudFront & Lambda@Edge'
+author: 'Richard Willis <willis.rh@gmail.com>'
+branding:
+  icon: 'upload-cloud'
+  color: 'gray-dark'
+inputs:
+  cfStackName:
+    required: true
+    description: 'The name of the Cloudformation stack to be created. For example: "example-com-static-cloudformation-stack"'
+  cfTemplate:
+    required: true
+    description: 'The relative path to the CloudFormation stack template. For example: "./cloudformation/s3bucket_with_cloudfront.yml"'
+  cfApplyChangeSet:
+    required: true
+    description: 'Whether to apply the CloudFormation ChangeSet (if any)'
+  gitHubToken:
+    required: true
+    description: 'GitHub Token used for commenting on Pull Requests. Use the default GITHUB_TOKEN from secrets.'
+  awsRegion:
+    require: true
+    description: 'The AWS region in which to create the stack. You should set this to: us-east-1'
+  s3BucketName:
+    required: true
+    description: 'The name of S3 bucket to be created, to store your static files. Must end with region name, for example: example.com-us-east-1'
+  s3AllowedOrigins:
+    required: true
+    description: 'A list of allowed domains to request resources from S3. For example: https://example.com,https://*.preview.example.com'
+  cloudFrontRootHosts:
+    required: true
+    description: 'A list of hosts assigned to the Root CloudFront distribution. For example: example.com'
+  cloudFrontPreviewHosts:
+    required: true
+    description: 'A list of hosts assigned to the Preview CloudFront distribution. For example: *.preview.example.com'
+  cloudFrontDefaultRootObject:
+    required: true
+    description: 'The CloudFront default root object. For example: index.html'
+  certificateARN:
+    required: true
+    description: 'ARN of the certificate for the root and preview domains. For example: arn:aws:acm:us-east-1:1234567:certificate/123abc-123abc-1234-5678-abcdef'
+  srcDir:
+    required: true
+    description: 'Path to build/out directory that contains the static files. For example: ./out'
+  staticFilesGlob:
+    required: true
+    description: 'Glob pattern for immutable static files. For example: _next/**'
+runs:
+  using: 'composite'
+  steps:
+    - name: Set stack prefix
+      id: prefix
+      shell: bash
+      run: |
+        if [ "$PULL_REQUEST" = "true" ]
+        then
+          echo "::set-output name=prefix::preview"
+        else
+          echo "::set-output name=prefix::root"
+        fi
+      env:
+        PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
+
+    - uses: badsyntax/github-action-aws-cloudformation@30e8484d108a13d803aa449c1ec1bd6aa4c932ff
+      name: Update CloudFormation Stack
+      id: update-stack
+      with:
+        githubToken: ${{ inputs.gitHubToken }}
+        stackName: ${{ inputs.cfStackName }}
+        template: ${{ inputs.cfTemplate }}
+        applyChangeSet: ${{ inputs.cfApplyChangeSet }}
+        awsRegion: ${{ inputs.awsRegion }}
+        parameters: |
+          S3BucketName=${{ inputs.s3BucketName }}&
+          S3AllowedOrigins=${{ inputs.s3AllowedOrigins }}&
+          CloudFrontRootHosts=${{ inputs.cloudFrontRootHosts }}&
+          CloudFrontPreviewHosts=${{ inputs.cloudFrontPreviewHosts }}&
+          CertificateARN=${{ inputs.certificateARN }}&
+          CloudFrontDefaultRootObject=${{ inputs.cloudFrontDefaultRootObject }}&
+          LambdaVersion=1.0.0
+
+    - uses: badsyntax/github-action-aws-s3@9537cd6d2013140b1d4e11ff526c5d75084c01df
+      name: Sync mutable HTML files to S3
+      id: sync-html-s3
+      with:
+        bucket: ${{ steps.update-stack.outputs.S3BucketName }}
+        action: 'sync'
+        srcDir: ${{ inputs.srcDir }}
+        filesGlob: '**/*.html'
+        awsRegion: ${{ inputs.awsRegion }}
+        prefix: ${{ steps.prefix.outputs.prefix }}
+        stripExtensionGlob: '**/**.html'
+        cacheControl: 'public,max-age=0,s-maxage=31536000,must-revalidate'
+
+    - uses: badsyntax/github-action-aws-s3@9537cd6d2013140b1d4e11ff526c5d75084c01df
+      name: Sync immutable files to S3
+      id: sync-immutable-s3
+      with:
+        bucket: ${{ steps.update-stack.outputs.S3BucketName }}
+        action: 'sync'
+        srcDir: ${{ inputs.srcDir }}
+        filesGlob: ${{ inputs.staticFilesGlob }}
+        awsRegion: ${{ inputs.awsRegion }}
+        prefix: ${{ steps.prefix.outputs.prefix }}
+        cacheControl: 'public,max-age=31536000,immutable'
+
+    - name: Set CloudFront Distribution Id
+      id: cloudfront-distribution-id
+      shell: bash
+      run: |
+        if [ "$PULL_REQUEST" = "true" ]
+        then
+          echo "::set-output name=distributionId::$CFDistributionPreviewId"
+        else
+          echo "::set-output name=distributionId::$CFDistributionRootId"
+        fi
+      env:
+        CFDistributionRootId: ${{ steps.update-stack.outputs.CFDistributionRootId }}
+        CFDistributionPreviewId: ${{ steps.update-stack.outputs.CFDistributionPreviewId }}
+        PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
+
+    - uses: badsyntax/github-action-aws-cloudfront@064152fefc6fbfa7d66ff99c6a9a4efe019d2e6a
+      name: Invalidate CloudFront Cache
+      id: invalidate-cloudfront-cache
+      with:
+        distributionId: ${{ steps.cloudfront-distribution-id.outputs.distributionId }}
+        awsRegion: ${{ inputs.awsRegion }}
+        originPrefix: ${{ steps.prefix.outputs.prefix }}
+        invalidatePaths: ${{ steps.sync-html-s3.outputs.S3SyncedFiles }}
+        defaultRootObject: ${{ inputs.cloudFrontDefaultRootObject }}
+
+    - uses: actions/github-script@v5
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '👋 Preview Website Deployed'
+          })
