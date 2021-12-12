@@ -47,18 +47,18 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Set stack prefix
+    - uses: actions/github-script@v5
+      name: Set Prefix
       id: prefix
-      shell: bash
-      run: |
-        if [ "$PULL_REQUEST" = "true" ]
-        then
-          echo "::set-output name=prefix::preview"
-        else
-          echo "::set-output name=prefix::root"
-        fi
-      env:
-        PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
+      with:
+        script: |
+          const isPullRequest = context.eventName === 'pull_request';
+          if (isPullRequest) {
+            const prBranchName = context.payload.pull_request.head.ref.replace(/\//g, '-');
+            console.log(`::set-output name=prefix::preview/${prBranchName}`);
+          } else {
+            console.log(`::set-output name=prefix::root`);
+          }
 
     - uses: badsyntax/github-action-aws-cloudformation@30e8484d108a13d803aa449c1ec1bd6aa4c932ff
       name: Update CloudFormation Stack
@@ -103,20 +103,21 @@ runs:
         prefix: ${{ steps.prefix.outputs.prefix }}
         cacheControl: 'public,max-age=31536000,immutable'
 
-    - name: Set CloudFront Distribution Id
+    - uses: actions/github-script@v5
+      name: Set CloudFront Distribution Id
       id: cloudfront-distribution-id
-      shell: bash
-      run: |
-        if [ "$PULL_REQUEST" = "true" ]
-        then
-          echo "::set-output name=distributionId::$CFDistributionPreviewId"
-        else
-          echo "::set-output name=distributionId::$CFDistributionRootId"
-        fi
+      with:
+        script: |
+          const { CFDistributionPreviewId, CFDistributionRootId } = process.env;
+          const isPullRequest = context.eventName === 'pull_request';
+          if (isPullRequest) {
+            console.log(`::set-output name=distributionId::${CFDistributionPreviewId}`);
+          } else {
+            console.log(`::set-output name=distributionId::${CFDistributionRootId}`);
+          }
       env:
         CFDistributionRootId: ${{ steps.update-stack.outputs.CFDistributionRootId }}
         CFDistributionPreviewId: ${{ steps.update-stack.outputs.CFDistributionPreviewId }}
-        PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
 
     - uses: badsyntax/github-action-aws-cloudfront@064152fefc6fbfa7d66ff99c6a9a4efe019d2e6a
       name: Invalidate CloudFront Cache
