@@ -1,0 +1,46 @@
+name: 'Deploy'
+
+concurrency:
+  group: prod_deploy
+  cancel-in-progress: false
+
+on:
+  repository_dispatch:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    name: 'Deploy'
+    runs-on: ubuntu-20.04
+    if: github.actor != 'dependabot[bot]' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - uses: ./
+        name: Deploy Site
+        with:
+          cfStackName: 'badsyntax-github-action-example-aws-static-stack'
+          cfTemplate: './cloudformation/cloudformation-s3bucket-stack.yml'
+          cfApplyChangeSet: ${{ github.event_name != 'repository_dispatch' }}
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          awsRegion: 'us-east-1'
+          s3BucketName: 'badsyntax-github-action-example-aws-static-stack-us-east-1'
+          s3AllowedOrigins: 'https://static-example.richardwillis.info, https://*.preview.static-example.richardwillis.info'
+          cloudFrontRootHosts: 'static-example.richardwillis.info'
+          cloudFrontPreviewHosts: '*.preview.static-example.richardwillis.info'
+          cloudFrontDefaultRootObject: 'index.html'
+          certificateARN: 'arn:aws:acm:us-east-1:008215002370:certificate/39df7626-7d2f-42e9-94f4-a3ce61ca3d5e'
+          srcDir: './out'
+          staticFilesGlob: 'css/**'
