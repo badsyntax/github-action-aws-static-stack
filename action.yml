@@ -144,7 +144,7 @@ runs:
 
     - name: Find PR Comment
       uses: peter-evans/find-comment@v1
-      if: github.event_name == 'pull_request' && github.event.action != 'closed
+      if: github.event_name == 'pull_request' && github.event.action != 'closed'
       id: find-comment
       with:
         issue-number: ${{ github.event.number }}
@@ -152,7 +152,7 @@ runs:
 
     - Name: Add/Update PR Comment
       uses: actions/github-script@v5
-      if: github.event_name == 'pull_request' && github.event.action != 'closed
+      if: github.event_name == 'pull_request' && github.event.action != 'closed'
       with:
         script: |
           const {
