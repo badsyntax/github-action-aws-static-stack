@@ -93,6 +93,7 @@ jobs:
           staticFilesGlob: 'css/**'
           lambdaVersion: '1.0.0'
           previewUrlTemplate: 'https://{branchName}.preview.example.com'
+          deletePreviewSiteOnPRClose: true
 ```
 
 ### Step 3: Deploy
@@ -135,6 +136,7 @@ All of the following inputs are required:
 | `staticFilesGlob`             | Glob pattern for immutable static files                                                          | `_next/**`                                                                 |
 | `lambdaVersion`               | The lambda version. Required to deploy a new lambda. You must update this if changing the lambda | `1.0.0`                                                                    |
 | `previewUrlTemplate`          | The preview url template                                                                         | `https://{branchName}.preview.example.com`                                 |
+| `deletePreviewSiteOnPRClose`  | Whether to delete the preview site on PR close                                                   | `true`                                                                     |
 
 ## ScreenShots
 

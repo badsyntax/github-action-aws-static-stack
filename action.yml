@@ -50,6 +50,9 @@ inputs:
   previewUrlTemplate:
     required: true
     description: 'The preview url template. For example: https://{branchName}.preview.example.com'
+  deletePreviewSiteOnPRClose:
+    required: true
+    description: 'Whether to delete the preview site on PR close'
 runs:
   using: 'composite'
   steps:
@@ -75,6 +78,7 @@ runs:
     - uses: badsyntax/github-action-aws-cloudformation@v0.0.2
       name: Update CloudFormation Stack
       id: update-stack
+      if: github.event_name != 'pull_request' || github.event.action != 'closed'
       with:
         githubToken: ${{ inputs.gitHubToken }}
         stackName: ${{ inputs.cfStackName }}
@@ -93,6 +97,7 @@ runs:
     - uses: badsyntax/github-action-aws-s3@v0.0.1
       name: Sync mutable HTML files to S3
       id: sync-html-s3
+      if: github.event_name != 'pull_request' || github.event.action != 'closed'
       with:
         bucket: ${{ steps.update-stack.outputs.S3BucketName }}
         action: 'sync'
@@ -106,6 +111,7 @@ runs:
     - uses: badsyntax/github-action-aws-s3@v0.0.1
       name: Sync immutable files to S3
       id: sync-immutable-s3
+      if: github.event_name != 'pull_request' || github.event.action != 'closed'
       with:
         bucket: ${{ steps.update-stack.outputs.S3BucketName }}
         action: 'sync'
@@ -117,6 +123,7 @@ runs:
 
     - uses: actions/github-script@v5
       name: Set CloudFront Distribution Id
+      if: github.event_name != 'pull_request' || github.event.action != 'closed'
       id: cloudfront-distribution-id
       with:
         script: |
@@ -134,6 +141,7 @@ runs:
     - uses: badsyntax/github-action-aws-cloudfront@v0.0.1
       name: Invalidate CloudFront Cache
       id: invalidate-cloudfront-cache
+      if: github.event_name != 'pull_request' || github.event.action != 'closed'
       with:
         distributionId: ${{ steps.cloudfront-distribution-id.outputs.distributionId }}
         awsRegion: ${{ inputs.awsRegion }}
@@ -158,6 +166,7 @@ runs:
           const {
             PREVIEW_URL_TEMPLATE: previewUrlTemplate,
             SANITIZED_BRANCH_NAME: sanitizedBranchName,
+            COMMENT_ID: commentId,
           } = process.env;
           const previewUrl = previewUrlTemplate.replace(
             '{branchName}',
@@ -170,7 +179,6 @@ runs:
             repo: context.repo.repo,
             body,
           };
-          const commentId = process.env.COMMENT_ID;
           if (commentId) {
             await github.rest.issues.deleteComment({
               ...config,
@@ -182,3 +190,51 @@ runs:
         COMMENT_ID: ${{ steps.find-comment.outputs.comment-id }}
         PREVIEW_URL_TEMPLATE: ${{ inputs.previewUrlTemplate }}
         SANITIZED_BRANCH_NAME: ${{ steps.vars.outputs.sanitizedBranchName }}
+
+    - uses: badsyntax/github-action-aws-s3@v0.0.1
+      name: Delete Preview Files in S3
+      id: delete-preview-files
+      if: github.event_name == 'pull_request' && github.event.action == 'closed'
+      with:
+        bucket: ${{ steps.update-stack.outputs.S3BucketName }}
+        action: 'clean'
+        srcDir: ${{ inputs.srcDir }}
+        filesGlob: '**/*'
+        awsRegion: ${{ inputs.awsRegion }}
+        prefix: ${{ steps.vars.outputs.prefix }}
+
+    # TODO
+    # - uses: badsyntax/github-action-aws-cloudfront@v0.0.1
+    #   name: Invalidate CloudFront Cache
+    #   id: invalidate-cloudfront-cache
+    #   if: github.event_name != 'pull_request' || github.event.action != 'closed'
+    #   with:
+    #     distributionId: ${{ steps.cloudfront-distribution-id.outputs.distributionId }}
+    #     awsRegion: ${{ inputs.awsRegion }}
+    #     originPrefix: ${{ steps.vars.outputs.prefix }}
+    #     includeOriginPrefix: ${{ github.event_name == 'pull_request' }}
+    #     invalidatePaths: ${{ steps.sync-html-s3.outputs.S3CleanedFiles }}
+    #     defaultRootObject: ${{ inputs.cloudFrontDefaultRootObject }}
+
+    - name: Delete Preview Site Comment
+      uses: actions/github-script@v5
+      if: github.event_name == 'pull_request' && github.event.action == 'closed'
+      with:
+        script: |
+          const {
+            COMMENT_ID: commentId,
+          } = process.env;
+          const config = {
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body,
+          };
+          if (commentId) {
+            await github.rest.issues.deleteComment({
+              ...config,
+              comment_id: commentId,
+            });
+          }
+      env:
+        COMMENT_ID: ${{ steps.find-comment.outputs.comment-id }}
