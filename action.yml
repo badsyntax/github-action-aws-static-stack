@@ -142,41 +142,42 @@ runs:
         invalidatePaths: ${{ steps.sync-html-s3.outputs.S3SyncedFiles }}
         defaultRootObject: ${{ inputs.cloudFrontDefaultRootObject }}
 
-    - name: Find Comment
+    - name: Find PR Comment
       uses: peter-evans/find-comment@v1
+      if: github.event_name == 'pull_request' && github.event.action != 'closed
       id: find-comment
       with:
         issue-number: ${{ github.event.number }}
         body-includes: 'Preview Site (ID: ${{ github.event.number }})'
 
-    - uses: actions/github-script@v5
+    - Name: Add/Update PR Comment
+      uses: actions/github-script@v5
+      if: github.event_name == 'pull_request' && github.event.action != 'closed
       with:
         script: |
-          if (context.eventName === 'pull_request') {
-            const {
-              PREVIEW_URL_TEMPLATE: previewUrlTemplate,
-              SANITIZED_BRANCH_NAME: sanitizedBranchName,
-            } = process.env;
-            const previewUrl = previewUrlTemplate.replace(
-              '{branchName}',
-              sanitizedBranchName
-            );
-            const body = `Preview Site (ID: ${context.issue.number})\n\n🎉 Preview site deployed to: <${previewUrl}>`;
-            const config = {
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body,
-            };
-            const commentId = process.env.COMMENT_ID;
-            if (commentId) {
-              await github.rest.issues.deleteComment({
-                ...config,
-                comment_id: commentId,
-              });
-            }
-            await github.rest.issues.createComment(config);
+          const {
+            PREVIEW_URL_TEMPLATE: previewUrlTemplate,
+            SANITIZED_BRANCH_NAME: sanitizedBranchName,
+          } = process.env;
+          const previewUrl = previewUrlTemplate.replace(
+            '{branchName}',
+            sanitizedBranchName
+          );
+          const body = `Preview Site (ID: ${context.issue.number})\n\n🎉 Preview site deployed to: <${previewUrl}>`;
+          const config = {
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body,
+          };
+          const commentId = process.env.COMMENT_ID;
+          if (commentId) {
+            await github.rest.issues.deleteComment({
+              ...config,
+              comment_id: commentId,
+            });
           }
+          await github.rest.issues.createComment(config);
       env:
         COMMENT_ID: ${{ steps.find-comment.outputs.comment-id }}
         PREVIEW_URL_TEMPLATE: ${{ inputs.previewUrlTemplate }}
