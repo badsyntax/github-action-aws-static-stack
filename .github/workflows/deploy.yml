@@ -45,4 +45,5 @@ jobs:
           srcDir: './out'
           staticFilesGlob: 'css/**'
           lambdaVersion: '1.0.4'
-          previewUrlTemplate: 'https://{branchName}.preview.static-example.richardwillis.info'
+          deletePreviewSiteOnPRClose: true
+          commentTemplate: '.github/preview-site-comment.md'

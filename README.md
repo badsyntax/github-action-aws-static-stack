@@ -5,6 +5,8 @@
 
 A composite GitHub Action to deploy your static website to the AWS Edge.
 
+This Action is _opinionated_ meaning it relies on a specific AWS configuration (managed by CloudFormation IaC). It's not likely everyone will agree with default stack configuration or workflows, but I've written the sub-Actions to be generic so you can use the sub-Actions to create your own static deploy pipeline if you require more flexibility. Refer to [`action.yaml`](https://github.com/badsyntax/github-action-aws-static-stack/blob/master/action.yml) for example usage of the various Actions.
+
 ## Features
 
 - Preview sites with Pull Request comments
@@ -34,7 +36,7 @@ Please also read the following to understand what AWS Credentials you should use
 
 ### Step 1: Define your Stack
 
-Use the [provided stack](https://github.com/badsyntax/github-action-aws-static-stack/blob/master/cloudformation/cloudformation-s3bucket-stack.yml) and place it somewhere in your repo, for example in location `./cloudformation/cloudformation-s3bucket-stack.yml`.
+Use the [provided stack](https://github.com/badsyntax/github-action-aws-static-stack/blob/master/cloudformation/cloudformation-s3bucket-stack.yml) and place it somewhere in your repo, for example in location `./cloudformation/cloudformation-s3bucket-stack.yml`
 
 You are welcome to change the stack as long as you don't change the following outputs:
 
@@ -42,7 +44,11 @@ You are welcome to change the stack as long as you don't change the following ou
 - `CFDistributionRootId`
 - `CFDistributionPreviewId`
 
-### Step 2: Define the Actions YAML
+### Step 2: Define your PR Comment Template
+
+Use the [provided template](https://github.com/badsyntax/github-action-aws-static-stack/blob/master/.github/preview-site-comment.md) and place it somewhere in your repo, for example in location `.github/preview-site-comment.md`
+
+### Step 3: Define the Actions YAML
 
 ```yaml
 name: 'Deploy'
@@ -92,16 +98,17 @@ jobs:
           srcDir: './out'
           staticFilesGlob: 'css/**'
           lambdaVersion: '1.0.0'
-          previewUrlTemplate: 'https://{branchName}.preview.example.com'
+          deletePreviewSiteOnPRClose: true
+          commentTemplate: '.github/comment-template.md'
 ```
 
-### Step 3: Deploy
+### Step 4: Deploy
 
 Send a pull request to your repository to create the stack and deploy a preview site.
 
 Note that `cfApplyChangeSet` must be set to `true` to allow the stack to be created before attempting a deploy. The only time you don't want to set this is when the job is run via webhook (eg `repository_dispatch`).
 
-### Step 4: Adjust Domain Records
+### Step 5: Adjust Domain Records
 
 Create `CNAME` records that point to the relevant distribution.
 
@@ -134,7 +141,8 @@ All of the following inputs are required:
 | `srcDir`                      | Path to build/out directory that contains the static files                                       | `./out`                                                                    |
 | `staticFilesGlob`             | Glob pattern for immutable static files                                                          | `_next/**`                                                                 |
 | `lambdaVersion`               | The lambda version. Required to deploy a new lambda. You must update this if changing the lambda | `1.0.0`                                                                    |
-| `previewUrlTemplate`          | The preview url template                                                                         | `https://{branchName}.preview.example.com`                                 |
+| `deletePreviewSiteOnPRClose`  | Whether to delete the preview site on PR close                                                   | `true`                                                                     |
+| `commentTemplate`             | Path to the Pull Request comment template                                                        | `.github/comment-template.md`                                              |
 
 ## ScreenShots
 
@@ -147,10 +155,6 @@ Check the Action output for logs.
 If you need to see more verbose logs you can set `ACTIONS_STEP_DEBUG` to `true` as an Action Secret.
 
 Detailed stack logs can be found in CloudFormation in the AWS Console.
-
-## Creating Your Own AWS Static Stack
-
-This GitHub Action combines various other Actions and you can do the same if you require more flexibility. Refer to [`action.yaml`](https://github.com/badsyntax/github-action-aws-static-stack/blob/master/action.yml) for example usage of the various Actions.
 
 ## License
 
