@@ -47,9 +47,28 @@ inputs:
   lambdaVersion:
     required: true
     description: 'The lambda version. Required to deploy a new lambda. You must update this if changing the lambda. For example: 1.0.0'
+  previewUrlTemplate:
+    required: true
+    description: 'The preview url template. For example: https://{branchName}.preview.example.com'
 runs:
   using: 'composite'
   steps:
+    - uses: actions/github-script@v5
+      name: Set vars
+      id: vars
+      with:
+        script: |
+          const isPullRequest = context.eventName === 'pull_request';
+          const prBranchName = context.payload.pull_request.head.ref.replace(/\//g, '-');
+
+          console.log(`::set-output name=sanitizedBranchName::${prBranchName}`);
+
+          if (isPullRequest) {
+            console.log(`::set-output name=prefix::preview/${prBranchName}`);
+          } else {
+            console.log(`::set-output name=prefix::root`);
+          }
+
     - uses: actions/github-script@v5
       name: Set Prefix
       id: prefix
@@ -63,7 +82,7 @@ runs:
             console.log(`::set-output name=prefix::root`);
           }
 
-    - uses: badsyntax/github-action-aws-cloudformation@30e8484d108a13d803aa449c1ec1bd6aa4c932ff
+    - uses: badsyntax/github-action-aws-cloudformation@v0.0.2
       name: Update CloudFormation Stack
       id: update-stack
       with:
@@ -81,7 +100,7 @@ runs:
           CloudFrontDefaultRootObject=${{ inputs.cloudFrontDefaultRootObject }}&
           LambdaVersion=${{ inputs.lambdaVersion }}
 
-    - uses: badsyntax/github-action-aws-s3@9537cd6d2013140b1d4e11ff526c5d75084c01df
+    - uses: badsyntax/github-action-aws-s3@v0.0.1
       name: Sync mutable HTML files to S3
       id: sync-html-s3
       with:
@@ -90,11 +109,11 @@ runs:
         srcDir: ${{ inputs.srcDir }}
         filesGlob: '**/*.html'
         awsRegion: ${{ inputs.awsRegion }}
-        prefix: ${{ steps.prefix.outputs.prefix }}
+        prefix: ${{ steps.vars.outputs.prefix }}
         stripExtensionGlob: '**/**.html'
         cacheControl: 'public,max-age=0,s-maxage=31536000,must-revalidate'
 
-    - uses: badsyntax/github-action-aws-s3@9537cd6d2013140b1d4e11ff526c5d75084c01df
+    - uses: badsyntax/github-action-aws-s3@v0.0.1
       name: Sync immutable files to S3
       id: sync-immutable-s3
       with:
@@ -103,7 +122,7 @@ runs:
         srcDir: ${{ inputs.srcDir }}
         filesGlob: ${{ inputs.staticFilesGlob }}
         awsRegion: ${{ inputs.awsRegion }}
-        prefix: ${{ steps.prefix.outputs.prefix }}
+        prefix: ${{ steps.vars.outputs.prefix }}
         cacheControl: 'public,max-age=31536000,immutable'
 
     - uses: actions/github-script@v5
@@ -122,25 +141,50 @@ runs:
         CFDistributionRootId: ${{ steps.update-stack.outputs.CFDistributionRootId }}
         CFDistributionPreviewId: ${{ steps.update-stack.outputs.CFDistributionPreviewId }}
 
-    - uses: badsyntax/github-action-aws-cloudfront@f90772374f4cb3a51ccfc47465955866435c7166
+    - uses: badsyntax/github-action-aws-cloudfront@v0.0.1
       name: Invalidate CloudFront Cache
       id: invalidate-cloudfront-cache
       with:
         distributionId: ${{ steps.cloudfront-distribution-id.outputs.distributionId }}
         awsRegion: ${{ inputs.awsRegion }}
-        originPrefix: ${{ steps.prefix.outputs.prefix }}
+        originPrefix: ${{ steps.vars.outputs.prefix }}
         includeOriginPrefix: ${{ github.event_name == 'pull_request' }}
         invalidatePaths: ${{ steps.sync-html-s3.outputs.S3SyncedFiles }}
         defaultRootObject: ${{ inputs.cloudFrontDefaultRootObject }}
+
+    - name: Find Comment
+      uses: peter-evans/find-comment@v1
+      id: find-comment
+      with:
+        issue-number: ${{ github.event.number }}
+        body-includes: 'Preview Site (ID: ${{ github.event.number }})'
 
     - uses: actions/github-script@v5
       with:
         script: |
           if (context.eventName === 'pull_request') {
-            github.rest.issues.createComment({
+            const {
+              PREVIEW_URL_TEMPLATE: previewUrlTemplate,
+              SANITIZED_BRANCH_NAME: sanitizedBranchName
+            } = process.env;
+            const previewUrl = previewUrlTemplate.replace('{branchName}', sanitizedBranchName);
+            const body = `Preview Site (ID: ${context.issue.number})\n\n🎉 Preview site deployed to: <${previewUrl}>`;
+            const config = {
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '👋 Preview Website Deployed'
-            })
+              body
+            };
+            const commentId = process.env.COMMENT_ID;
+            if (commentId) {
+              await github.rest.issues.deleteComment({
+                ...config,
+                comment_id: commentId,
+              });
+            }
+            await github.rest.issues.createComment(config)
           }
+      env:
+        COMMENT_ID: ${{ steps.find-comment.outputs.comment-id }}
+        PREVIEW_URL_TEMPLATE: ${{ inputs.previewUrlTemplate }}
+        SANITIZED_BRANCH_NAME: ${{ steps.vars.outputs.sanitizedBranchName }}
