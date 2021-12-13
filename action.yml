@@ -59,24 +59,14 @@ runs:
       with:
         script: |
           const isPullRequest = context.eventName === 'pull_request';
-          const prBranchName = context.payload?.pull_request?.head.ref.replace(/\//g, '-');
+          const prBranchName = context.payload?.pull_request?.head.ref.replace(
+            /\//g,
+            '-'
+          );
 
           console.log(`::set-output name=sanitizedBranchName::${prBranchName}`);
 
           if (isPullRequest) {
-            console.log(`::set-output name=prefix::preview/${prBranchName}`);
-          } else {
-            console.log(`::set-output name=prefix::root`);
-          }
-
-    - uses: actions/github-script@v5
-      name: Set Prefix
-      id: prefix
-      with:
-        script: |
-          const isPullRequest = context.eventName === 'pull_request';
-          if (isPullRequest) {
-            const prBranchName = context.payload.pull_request.head.ref.replace(/\//g, '-');
             console.log(`::set-output name=prefix::preview/${prBranchName}`);
           } else {
             console.log(`::set-output name=prefix::root`);
@@ -165,15 +155,18 @@ runs:
           if (context.eventName === 'pull_request') {
             const {
               PREVIEW_URL_TEMPLATE: previewUrlTemplate,
-              SANITIZED_BRANCH_NAME: sanitizedBranchName
+              SANITIZED_BRANCH_NAME: sanitizedBranchName,
             } = process.env;
-            const previewUrl = previewUrlTemplate.replace('{branchName}', sanitizedBranchName);
+            const previewUrl = previewUrlTemplate.replace(
+              '{branchName}',
+              sanitizedBranchName
+            );
             const body = `Preview Site (ID: ${context.issue.number})\n\n🎉 Preview site deployed to: <${previewUrl}>`;
             const config = {
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body
+              body,
             };
             const commentId = process.env.COMMENT_ID;
             if (commentId) {
@@ -182,7 +175,7 @@ runs:
                 comment_id: commentId,
               });
             }
-            await github.rest.issues.createComment(config)
+            await github.rest.issues.createComment(config);
           }
       env:
         COMMENT_ID: ${{ steps.find-comment.outputs.comment-id }}
