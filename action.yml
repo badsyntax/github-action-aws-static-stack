@@ -150,7 +150,7 @@ runs:
         issue-number: ${{ github.event.number }}
         body-includes: 'Preview Site (ID: ${{ github.event.number }})'
 
-    - Name: Add/Update PR Comment
+    - name: Add/Update PR Comment
       uses: actions/github-script@v5
       if: github.event_name == 'pull_request' && github.event.action != 'closed'
       with:
