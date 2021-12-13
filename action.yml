@@ -75,10 +75,9 @@ runs:
             console.log(`::set-output name=prefix::root`);
           }
 
-    - uses: badsyntax/github-action-aws-cloudformation@v0.0.2
+    - uses: badsyntax/github-action-aws-cloudformation@v0.0.3
       name: Update CloudFormation Stack
       id: update-stack
-      if: github.event_name != 'pull_request' || github.event.action != 'closed'
       with:
         githubToken: ${{ inputs.gitHubToken }}
         stackName: ${{ inputs.cfStackName }}
@@ -123,7 +122,6 @@ runs:
 
     - uses: actions/github-script@v5
       name: Set CloudFront Distribution Id
-      if: github.event_name != 'pull_request' || github.event.action != 'closed'
       id: cloudfront-distribution-id
       with:
         script: |
@@ -152,7 +150,7 @@ runs:
 
     - name: Find PR Comment
       uses: peter-evans/find-comment@v1
-      if: github.event_name == 'pull_request' && github.event.action != 'closed'
+      if: github.event_name == 'pull_request'
       id: find-comment
       with:
         issue-number: ${{ github.event.number }}
