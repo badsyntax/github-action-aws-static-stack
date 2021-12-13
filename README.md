@@ -107,7 +107,7 @@ View more info on using a custom domain: <https://docs.aws.amazon.com/AmazonClou
 
 All of the following inputs are required:
 
-| key                           | description                                                                                      | example                                                                    |
+| Name                          | Description                                                                                      | Example                                                                    |
 | ----------------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
 | `cfStackName`                 | The name of the Cloudformation stack to be created                                               | `example-com-static-cloudformation-stack`                                  |
 | `cfTemplate`                  | The relative path to the CloudFormation stack template                                           | `./cloudformation/s3bucket_with_cloudfront.yml`                            |
@@ -123,6 +123,7 @@ All of the following inputs are required:
 | `srcDir`                      | Path to build/out directory that contains the static files                                       | `./out`                                                                    |
 | `staticFilesGlob`             | Glob pattern for immutable static files                                                          | `_next/**`                                                                 |
 | `lambdaVersion`               | The lambda version. Required to deploy a new lambda. You must update this if changing the lambda | `1.0.0`                                                                    |
+| `previewUrlTemplate`          | The preview url template                                                                         | `https://{branchName}.preview.example.com`                                 |
 
 ## Debugging
 
