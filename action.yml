@@ -47,9 +47,13 @@ inputs:
   lambdaVersion:
     required: true
     description: 'The lambda version. Required to deploy a new lambda. You must update this if changing the lambda. For example: 1.0.0'
-  previewUrlTemplate:
+  deletePreviewSiteOnPRClose:
     required: true
-    description: 'The preview url template. For example: https://{branchName}.preview.example.com'
+    description: 'Whether to delete the preview site on PR close'
+  commentTemplate:
+    required: true
+    description: 'Path to the Pull Request comment template. For example: .github/preview-site-comment.md'
+
 runs:
   using: 'composite'
   steps:
@@ -59,20 +63,14 @@ runs:
       with:
         script: |
           const isPullRequest = context.eventName === 'pull_request';
-          const prBranchName = isPullRequest ? context.payload.pull_request.head.ref.replace(
-            /\//g,
-            '-'
-          ) : '';
+          const prBranchName = isPullRequest
+            ? context.payload.pull_request.head.ref.replace(/\//g, '-')
+            : '';
+          const prefix = isPullRequest ? `preview/${prBranchName}` : 'root';
+          core.setOutput('sanitizedBranchName', prBranchName);
+          core.setOutput('prefix', prefix);
 
-          console.log(`::set-output name=sanitizedBranchName::${prBranchName}`);
-
-          if (isPullRequest) {
-            console.log(`::set-output name=prefix::preview/${prBranchName}`);
-          } else {
-            console.log(`::set-output name=prefix::root`);
-          }
-
-    - uses: badsyntax/github-action-aws-cloudformation@v0.0.2
+    - uses: badsyntax/github-action-aws-cloudformation@v0.0.3
       name: Update CloudFormation Stack
       id: update-stack
       with:
@@ -90,9 +88,10 @@ runs:
           CloudFrontDefaultRootObject=${{ inputs.cloudFrontDefaultRootObject }}&
           LambdaVersion=${{ inputs.lambdaVersion }}
 
-    - uses: badsyntax/github-action-aws-s3@v0.0.1
+    - uses: badsyntax/github-action-aws-s3@v0.0.2
       name: Sync mutable HTML files to S3
       id: sync-html-s3
+      if: github.event_name != 'pull_request' || github.event.action != 'closed'
       with:
         bucket: ${{ steps.update-stack.outputs.S3BucketName }}
         action: 'sync'
@@ -103,9 +102,10 @@ runs:
         stripExtensionGlob: '**/**.html'
         cacheControl: 'public,max-age=0,s-maxage=31536000,must-revalidate'
 
-    - uses: badsyntax/github-action-aws-s3@v0.0.1
+    - uses: badsyntax/github-action-aws-s3@v0.0.2
       name: Sync immutable files to S3
       id: sync-immutable-s3
+      if: github.event_name != 'pull_request' || github.event.action != 'closed'
       with:
         bucket: ${{ steps.update-stack.outputs.S3BucketName }}
         action: 'sync'
@@ -120,65 +120,103 @@ runs:
       id: cloudfront-distribution-id
       with:
         script: |
-          const { CFDistributionPreviewId, CFDistributionRootId } = process.env;
-          const isPullRequest = context.eventName === 'pull_request';
-          if (isPullRequest) {
-            console.log(`::set-output name=distributionId::${CFDistributionPreviewId}`);
-          } else {
-            console.log(`::set-output name=distributionId::${CFDistributionRootId}`);
-          }
-      env:
-        CFDistributionRootId: ${{ steps.update-stack.outputs.CFDistributionRootId }}
-        CFDistributionPreviewId: ${{ steps.update-stack.outputs.CFDistributionPreviewId }}
+          const distributionId =
+            context.eventName === 'pull_request'
+              ? '${{ steps.update-stack.outputs.CFDistributionPreviewId }}'
+              : '${{ steps.update-stack.outputs.CFDistributionRootId }}';
+          core.setOutput('distributionId', distributionId);
 
     - uses: badsyntax/github-action-aws-cloudfront@v0.0.1
       name: Invalidate CloudFront Cache
       id: invalidate-cloudfront-cache
+      if: github.event_name != 'pull_request' || github.event.action != 'closed'
       with:
         distributionId: ${{ steps.cloudfront-distribution-id.outputs.distributionId }}
         awsRegion: ${{ inputs.awsRegion }}
         originPrefix: ${{ steps.vars.outputs.prefix }}
         includeOriginPrefix: ${{ github.event_name == 'pull_request' }}
-        invalidatePaths: ${{ steps.sync-html-s3.outputs.S3SyncedFiles }}
+        invalidatePaths: ${{ steps.sync-html-s3.outputs.modifiedKeys }}
         defaultRootObject: ${{ inputs.cloudFrontDefaultRootObject }}
+
+    - name: Pull Request Comment Body Template
+      if: github.event_name == 'pull_request' && github.event.action != 'closed'
+      id: pr-body-template
+      uses: chuhlomin/render-template@v1.2
+      with:
+        template: ${{ inputs.commentTemplate }}
+        vars: |
+          issueNumber: ${{ github.event.pull_request.number }}
+          branchName: ${{ steps.vars.outputs.sanitizedBranchName }}
+
+    - name: Pull Request Comment Body With Id
+      uses: actions/github-script@v5
+      id: pr-body
+      with:
+        script: |
+          core.setOutput(
+            'body',
+            `Deploy Site (ID: ${{ github.event.pull_request.number }})\n\n${{ steps.pr-body-template.outputs.result }}`
+          );
 
     - name: Find PR Comment
       uses: peter-evans/find-comment@v1
-      if: github.event_name == 'pull_request' && github.event.action != 'closed'
+      if: github.event_name == 'pull_request'
       id: find-comment
       with:
-        issue-number: ${{ github.event.number }}
-        body-includes: 'Preview Site (ID: ${{ github.event.number }})'
+        issue-number: ${{ github.event.pull_request.number }}
+        body-includes: 'Deploy Site (ID: ${{ github.event.pull_request.number }})'
 
-    - name: Add/Update PR Comment
+    - name: Delete comment
       uses: actions/github-script@v5
-      if: github.event_name == 'pull_request' && github.event.action != 'closed'
+      if: github.event_name == 'pull_request' && github.event.action != 'closed' && steps.find-comment.outputs.comment-id != ''
       with:
         script: |
-          const {
-            PREVIEW_URL_TEMPLATE: previewUrlTemplate,
-            SANITIZED_BRANCH_NAME: sanitizedBranchName,
-          } = process.env;
-          const previewUrl = previewUrlTemplate.replace(
-            '{branchName}',
-            sanitizedBranchName
-          );
-          const body = `Preview Site (ID: ${context.issue.number})\n\n🎉 Preview site deployed to: <${previewUrl}>`;
-          const config = {
+          await github.rest.issues.deleteComment({
             issue_number: context.issue.number,
             owner: context.repo.owner,
             repo: context.repo.repo,
-            body,
-          };
-          const commentId = process.env.COMMENT_ID;
-          if (commentId) {
-            await github.rest.issues.deleteComment({
-              ...config,
-              comment_id: commentId,
-            });
-          }
-          await github.rest.issues.createComment(config);
-      env:
-        COMMENT_ID: ${{ steps.find-comment.outputs.comment-id }}
-        PREVIEW_URL_TEMPLATE: ${{ inputs.previewUrlTemplate }}
-        SANITIZED_BRANCH_NAME: ${{ steps.vars.outputs.sanitizedBranchName }}
+            comment_id: ${{ steps.find-comment.outputs.comment-id }},
+          });
+
+    - name: Create comment
+      if: github.event_name == 'pull_request' && github.event.action != 'closed'
+      uses: peter-evans/create-or-update-comment@v1
+      with:
+        issue-number: ${{ github.event.pull_request.number }}
+        body: ${{ steps.pr-body.outputs.body }}
+
+    - uses: badsyntax/github-action-aws-s3@v0.0.2
+      name: Delete Preview Files in S3
+      id: delete-preview-files
+      if: github.event_name == 'pull_request' && github.event.action == 'closed' && inputs.deletePreviewSiteOnPRClose == 'true'
+      with:
+        bucket: ${{ steps.update-stack.outputs.S3BucketName }}
+        action: 'clean'
+        srcDir: ${{ inputs.srcDir }}
+        filesGlob: '**/*'
+        awsRegion: ${{ inputs.awsRegion }}
+        prefix: ${{ steps.vars.outputs.prefix }}
+
+    - uses: badsyntax/github-action-aws-cloudfront@v0.0.1
+      name: Invalidate CloudFront Cache
+      id: invalidate-cloudfront-cache-delete
+      if: github.event_name == 'pull_request' && github.event.action == 'closed' && inputs.deletePreviewSiteOnPRClose == 'true'
+      with:
+        distributionId: ${{ steps.cloudfront-distribution-id.outputs.distributionId }}
+        awsRegion: ${{ inputs.awsRegion }}
+        originPrefix: ${{ steps.vars.outputs.prefix }}
+        includeOriginPrefix: ${{ github.event_name == 'pull_request' }}
+        invalidatePaths: ${{ steps.delete-preview-files.outputs.modifiedKeys }}
+        defaultRootObject: ${{ inputs.cloudFrontDefaultRootObject }}
+
+    - name: Delete comment
+      uses: actions/github-script@v5
+      if: github.event_name == 'pull_request' && github.event.action == 'closed' && steps.find-comment.outputs.comment-id != '' && inputs.deletePreviewSiteOnPRClose == 'true'
+      with:
+        script: |
+          await github.rest.issues.deleteComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            comment_id: ${{ steps.find-comment.outputs.comment-id }},
+          });
