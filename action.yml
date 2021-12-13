@@ -59,7 +59,7 @@ runs:
       with:
         script: |
           const isPullRequest = context.eventName === 'pull_request';
-          const prBranchName = context.payload.pull_request.head.ref.replace(/\//g, '-');
+          const prBranchName = context.payload?.pull_request?.head.ref.replace(/\//g, '-');
 
           console.log(`::set-output name=sanitizedBranchName::${prBranchName}`);
 
