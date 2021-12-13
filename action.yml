@@ -1,4 +1,4 @@
-name: 'AWS Static Stack'
+name: 'AWS Edge Static Stack'
 description: 'Deploy your static website to the AWS Edge using S3, CloudFront & Lambda@Edge'
 author: 'Richard Willis <willis.rh@gmail.com>'
 branding:
