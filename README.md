@@ -5,6 +5,16 @@
 
 A composite GitHub Action to deploy your static website to the AWS Edge.
 
+## Features
+
+- Preview sites with Pull Request comments
+- S3 for origin object storage
+- Cloudfront Edge caching
+- Separate Root & Preview Cloudfront distributions
+  - The Preview distribution uses a Lambda to rewrite the URLs to the correct location in the S3 origin
+  - The Root distribution routes directly to the S3 origin and does not use a Lambda, to provide the fastest possible response times
+- Flexible stack creation (you provide & own the IaC)
+
 The following GitHub Actions are used:
 
 - [badsyntax/github-action-aws-cloudformation](https://github.com/badsyntax/github-action-aws-cloudformation)
@@ -82,6 +92,7 @@ jobs:
           srcDir: './out'
           staticFilesGlob: 'css/**'
           lambdaVersion: '1.0.0'
+          previewUrlTemplate: 'https://{branchName}.preview.example.com'
 ```
 
 ### Step 3: Deploy
@@ -124,6 +135,10 @@ All of the following inputs are required:
 | `staticFilesGlob`             | Glob pattern for immutable static files                                                          | `_next/**`                                                                 |
 | `lambdaVersion`               | The lambda version. Required to deploy a new lambda. You must update this if changing the lambda | `1.0.0`                                                                    |
 | `previewUrlTemplate`          | The preview url template                                                                         | `https://{branchName}.preview.example.com`                                 |
+
+## ScreenShots
+
+<img src="./images/screenshot-pr-comment.png" style="max-width: 600px" />
 
 ## Debugging
 
