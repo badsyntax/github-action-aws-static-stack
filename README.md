@@ -22,6 +22,7 @@ The following GitHub Actions are used:
 - [badsyntax/github-action-aws-cloudformation](https://github.com/badsyntax/github-action-aws-cloudformation)
 - [badsyntax/github-action-aws-cloudfront](https://github.com/badsyntax/github-action-aws-cloudfront)
 - [badsyntax/github-action-aws-s3](https://github.com/badsyntax/github-action-aws-s3)
+- [badsyntax/github-action-issue-comment](https://github.com/badsyntax/github-action-issue-comment)
 
 ## Getting Started
 

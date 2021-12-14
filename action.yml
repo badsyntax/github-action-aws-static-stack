@@ -137,53 +137,6 @@ runs:
         invalidate-paths: ${{ steps.sync-html-s3.outputs.modified-keys }}
         default-root-object: ${{ inputs.cloudfront-default-root-object }}
 
-    # - name: Pull Request Comment Body Template
-    #   if: github.event_name == 'pull_request' && github.event.action != 'closed'
-    #   id: pr-body-template
-    #   uses: chuhlomin/render-template@v1.2
-    #   with:
-    #     template: ${{ inputs.comment-template }}
-    #     vars: |
-    #       issueNumber: ${{ github.event.pull_request.number }}
-    #       branchName: ${{ steps.vars.outputs.previewBranch }}
-
-    # - name: Pull Request Comment Body With Id
-    #   uses: actions/github-script@v5
-    #   id: pr-body
-    #   with:
-    #     script: |
-    #       core.setOutput(
-    #         'body',
-    #         `Deploy Site (ID: ${{ github.event.pull_request.number }})\n\n${{ steps.pr-body-template.outputs.result }}`
-    #       );
-
-    # - name: Find PR Comment
-    #   uses: peter-evans/find-comment@v1
-    #   if: github.event_name == 'pull_request'
-    #   id: find-comment
-    #   with:
-    #     issue-number: ${{ github.event.pull_request.number }}
-    #     body-includes: 'Deploy Site (ID: ${{ github.event.pull_request.number }})'
-
-    # - name: Delete comment
-    #   uses: actions/github-script@v5
-    #   if: github.event_name == 'pull_request' && github.event.action != 'closed' && steps.find-comment.outputs.comment-id != ''
-    #   with:
-    #     script: |
-    #       await github.rest.issues.deleteComment({
-    #         issue_number: context.issue.number,
-    #         owner: context.repo.owner,
-    #         repo: context.repo.repo,
-    #         comment_id: ${{ steps.find-comment.outputs.comment-id }},
-    #       });
-
-    # - name: Create comment
-    #   if: github.event_name == 'pull_request' && github.event.action != 'closed'
-    #   uses: peter-evans/create-or-update-comment@v1
-    #   with:
-    #     issue-number: ${{ github.event.pull_request.number }}
-    #     body: ${{ steps.pr-body.outputs.body }}
-
     - uses: badsyntax/github-action-issue-comment@v0.0.3
       name: Comment on Pull Request
       if: github.event_name == 'pull_request' && github.event.action != 'closed'
