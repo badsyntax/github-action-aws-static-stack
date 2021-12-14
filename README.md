@@ -151,10 +151,6 @@ All of the following inputs are required:
 | -------------- | ------------------------------------------------------------------------- | ------------------------- |
 | `modifiedKeys` | A comma separated list of modified object keys (either synced or removed) | `file1,folder1/file2.ext` |
 
-## ScreenShots
-
-<img src="./images/screenshot-pr-comment.png" style="max-width: 600px" />
-
 ## Debugging
 
 Check the Action output for logs.
