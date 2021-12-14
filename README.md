@@ -84,29 +84,29 @@ jobs:
       - uses: badsyntax/github-action-aws-static-stack@v0.0.1
         name: Deploy Site
         with:
-          cfStackName: 'github-action-example-aws-static-stack'
-          cfTemplate: './cloudformation/cloudformation-s3bucket-stack.yml'
-          cfApplyChangeSet: ${{ github.event_name != 'repository_dispatch' }}
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          awsRegion: 'us-east-1'
-          s3BucketName: 'github-action-example-aws-static-stack-us-east-1'
-          s3AllowedOrigins: 'https://example.com, https://*.preview.example.com'
-          cloudFrontRootHosts: 'example.com'
-          cloudFrontPreviewHosts: '*.preview.example.com'
-          cloudFrontDefaultRootObject: 'index'
-          certificateARN: 'arn:aws:acm:us-east-1:0001112222:certificate/1234abc-1234-1234-abcd-12345'
-          srcDir: './out'
-          staticFilesGlob: 'css/**'
-          lambdaVersion: '1.0.0'
-          deletePreviewSiteOnPRClose: true
-          commentTemplate: '.github/comment-template.md'
+          cf-stack-name: 'github-action-example-aws-static-stack'
+          cf-template: './cloudformation/cloudformation-s3bucket-stack.yml'
+          cf-apply-change-set: ${{ github.event_name != 'repository_dispatch' }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          aws-region: 'us-east-1'
+          s3-bucket-name: 'github-action-example-aws-static-stack-us-east-1'
+          s3-allowed-origins: 'https://example.com, https://*.preview.example.com'
+          cloudfront-root-hosts: 'example.com'
+          cloudfront-preview-hosts: '*.preview.example.com'
+          cloudfront-default-root-object: 'index'
+          certificate-arn: 'arn:aws:acm:us-east-1:0001112222:certificate/1234abc-1234-1234-abcd-12345'
+          src-dir: './out'
+          static-files-glob: 'css/**'
+          lambda-version: '1.0.0'
+          delete-preview-site-on-pr-close: true
+          comment-template: '.github/comment-template.md'
 ```
 
 ### Step 4: Deploy
 
 Send a pull request to your repository to create the stack and deploy a preview site.
 
-Note that `cfApplyChangeSet` must be set to `true` to allow the stack to be created before attempting a deploy. The only time you don't want to set this is when the job is run via webhook (eg `repository_dispatch`).
+Note that `cf-apply-change-set` must be set to `true` to allow the stack to be created before attempting a deploy. The only time you don't want to set this is when the job is run via webhook (eg `repository_dispatch`).
 
 ### Step 5: Adjust Domain Records
 
@@ -125,24 +125,30 @@ View more info on using a custom domain: <https://docs.aws.amazon.com/AmazonClou
 
 All of the following inputs are required:
 
-| Name                          | Description                                                                                      | Example                                                                    |
-| ----------------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
-| `cfStackName`                 | The name of the Cloudformation stack to be created                                               | `example-com-static-cloudformation-stack`                                  |
-| `cfTemplate`                  | The relative path to the CloudFormation stack template                                           | `./cloudformation/s3bucket_with_cloudfront.yml`                            |
-| `cfApplyChangeSet`            | Whether to apply the CloudFormation ChangeSet (if any)                                           | `true`                                                                     |
-| `gitHubToken`                 | GitHub Token used for commenting on Pull Requests                                                | `${{ secrets.GITHUB_TOKEN }}`                                              |
-| `awsRegion`                   | 'The AWS region in which to create the stack. You should set this to `us-east-1`                 | `us-east-1`                                                                |
-| `s3BucketName`                | The name of S3 bucket to be created, to store your static files. Must end with region name       | `example.com-us-east-1`                                                    |
-| `s3AllowedOrigins`            | A list of allowed domains to request resources from S3                                           | `https://example.com,https://*.preview.example.com`                        |
-| `cloudFrontRootHosts`         | A list of hosts assigned to the Root CloudFront distribution                                     | `example.com`                                                              |
-| `cloudFrontPreviewHosts`      | A list of hosts assigned to the Preview CloudFront distribution                                  | `*.preview.example.com`                                                    |
-| `cloudFrontDefaultRootObject` | The CloudFront default root object                                                               | `index`                                                                    |
-| `certificateARN`              | ARN of the certificate for the root and preview domains                                          | `arn:aws:acm:us-east-1:1234567:certificate/123abc-123abc-1234-5678-abcdef` |
-| `srcDir`                      | Path to build/out directory that contains the static files                                       | `./out`                                                                    |
-| `staticFilesGlob`             | Glob pattern for immutable static files                                                          | `_next/**`                                                                 |
-| `lambdaVersion`               | The lambda version. Required to deploy a new lambda. You must update this if changing the lambda | `1.0.0`                                                                    |
-| `deletePreviewSiteOnPRClose`  | Whether to delete the preview site on PR close                                                   | `true`                                                                     |
-| `commentTemplate`             | Path to the Pull Request comment template                                                        | `.github/comment-template.md`                                              |
+| Name                              | Description                                                                                      | Example                                                                    |
+| --------------------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| `cf-stack-name`                   | The name of the Cloudformation stack to be created                                               | `example-com-static-cloudformation-stack`                                  |
+| `cf-template`                     | The relative path to the CloudFormation stack template                                           | `./cloudformation/s3bucket_with_cloudfront.yml`                            |
+| `cf-apply-change-set`             | Whether to apply the CloudFormation ChangeSet (if any)                                           | `true`                                                                     |
+| `token`                           | GitHub Token used for commenting on Pull Requests                                                | `${{ secrets.GITHUB_TOKEN }}`                                              |
+| `aws-region`                      | 'The AWS region in which to create the stack. You should set this to `us-east-1`                 | `us-east-1`                                                                |
+| `s3-bucket-name`                  | The name of S3 bucket to be created, to store your static files. Must end with region name       | `example.com-us-east-1`                                                    |
+| `s3-allowed-origins`              | A list of allowed domains to request resources from S3                                           | `https://example.com,https://*.preview.example.com`                        |
+| `cloudfront-root-hosts`           | A list of hosts assigned to the Root CloudFront distribution                                     | `example.com`                                                              |
+| `cloudfront-preview-hosts`        | A list of hosts assigned to the Preview CloudFront distribution                                  | `*.preview.example.com`                                                    |
+| `cloudfront-default-root-object`  | The CloudFront default root object                                                               | `index`                                                                    |
+| `certificate-arn`                 | ARN of the certificate for the root and preview domains                                          | `arn:aws:acm:us-east-1:1234567:certificate/123abc-123abc-1234-5678-abcdef` |
+| `src-dir`                         | Path to build/out directory that contains the static files                                       | `./out`                                                                    |
+| `static-files-glob`               | Glob pattern for immutable static files                                                          | `_next/**`                                                                 |
+| `lambda-version`                  | The lambda version. Required to deploy a new lambda. You must update this if changing the lambda | `1.0.0`                                                                    |
+| `delete-preview-site-on-pr-close` | Whether to delete the preview site on PR close                                                   | `true`                                                                     |
+| `comment-template`                | Path to the Pull Request comment template                                                        | `.github/comment-template.md`                                              |
+
+## Action Outputs
+
+| Name           | Description                                                               | Example                   |
+| -------------- | ------------------------------------------------------------------------- | ------------------------- |
+| `modifiedKeys` | A comma separated list of modified object keys (either synced or removed) | `file1,folder1/file2.ext` |
 
 ## ScreenShots
 
