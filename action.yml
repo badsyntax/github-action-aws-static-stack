@@ -134,7 +134,7 @@ runs:
         aws-region: ${{ inputs.aws-region }}
         origin-prefix: ${{ steps.vars.outputs.prefix }}
         include-origin-prefix: ${{ github.event_name == 'pull_request' }}
-        invalidate-paths: ${{ steps.sync-html-s3.outputs.modifiedKeys }}
+        invalidate-paths: ${{ steps.sync-html-s3.outputs.modified-keys }}
         default-root-object: ${{ inputs.cloudfront-default-root-object }}
 
     # - name: Pull Request Comment Body Template
@@ -222,7 +222,7 @@ runs:
         aws-region: ${{ inputs.aws-region }}
         origin-prefix: ${{ steps.vars.outputs.prefix }}
         include-origin-prefix: ${{ github.event_name == 'pull_request' }}
-        invalidate-paths: ${{ steps.delete-preview-files.outputs.modifiedKeys }}
+        invalidate-paths: ${{ steps.delete-preview-files.outputs.modified-keys }}
         default-root-object: ${{ inputs.cloudfront-default-root-object }}
 
     - uses: badsyntax/github-action-issue-comment@v0.0.3
