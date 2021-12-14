@@ -190,7 +190,7 @@ runs:
       with:
         action: 'create-clean'
         template: ${{ inputs.comment-template }}
-        id: cloudformation
+        id: deploy
         token: ${{ inputs.token }}
         issue-number: ${{ github.event.pull_request.number }}
         template-inputs: |
@@ -227,8 +227,9 @@ runs:
 
     - uses: badsyntax/github-action-issue-comment@v0.0.3
       name: Delete comment
-      if: github.event_name == 'pull_request' && github.event.action == 'closed' && steps.find-comment.outputs.comment-id != '' && inputs.delete-preview-site-on-pr-close == 'true'
+      if: github.event_name == 'pull_request' && github.event.action == 'closed' && inputs.delete-preview-site-on-pr-close == 'true'
       with:
         action: 'delete'
+        id: deploy
         token: ${{ inputs.token }}
         issue-number: ${{ github.event.pull_request.number }}
