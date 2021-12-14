@@ -31,19 +31,19 @@ jobs:
       - uses: ./
         name: Deploy Site
         with:
-          cfStackName: 'badsyntax-github-action-example-aws-static-stack'
-          cfTemplate: './cloudformation/cloudformation-s3bucket-stack.yml'
-          cfApplyChangeSet: ${{ github.event_name != 'repository_dispatch' }}
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          awsRegion: 'us-east-1'
-          s3BucketName: 'badsyntax-github-action-example-aws-static-stack-us-east-1'
-          s3AllowedOrigins: 'https://static-example.richardwillis.info, https://*.preview.static-example.richardwillis.info'
-          cloudFrontRootHosts: 'static-example.richardwillis.info'
-          cloudFrontPreviewHosts: '*.preview.static-example.richardwillis.info'
-          cloudFrontDefaultRootObject: 'index'
-          certificateARN: 'arn:aws:acm:us-east-1:008215002370:certificate/39df7626-7d2f-42e9-94f4-a3ce61ca3d5e'
-          srcDir: './out'
-          staticFilesGlob: 'css/**'
-          lambdaVersion: '1.0.4'
-          deletePreviewSiteOnPRClose: true
-          commentTemplate: '.github/preview-site-comment.md'
+          cf-stack-name: 'badsyntax-github-action-example-aws-static-stack'
+          cf-template: './cloudformation/cloudformation-s3bucket-stack.yml'
+          cf-apply-change-set: ${{ github.event_name != 'repository_dispatch' }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          aws-region: 'us-east-1'
+          s3-bucket-name: 'badsyntax-github-action-example-aws-static-stack-us-east-1'
+          s3-allowed-origins: 'https://static-example.richardwillis.info, https://*.preview.static-example.richardwillis.info'
+          cloudfront-root-hosts: 'static-example.richardwillis.info'
+          cloudfront-preview-hosts: '*.preview.static-example.richardwillis.info'
+          cloudfront-default-root-object: 'index'
+          certificate-arn: 'arn:aws:acm:us-east-1:008215002370:certificate/39df7626-7d2f-42e9-94f4-a3ce61ca3d5e'
+          src-dir: './out'
+          static-files-glob: 'css/**'
+          lambda-version: '1.0.4'
+          delete-preview-site-on-pr-close: true
+          comment-template: '.github/pr-comment-template.hbs'
