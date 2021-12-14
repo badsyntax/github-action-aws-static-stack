@@ -37,7 +37,7 @@ Please also read the following to understand what AWS Credentials you should use
 
 ### Step 1: Define your Stack
 
-Use the [provided stack](https://github.com/badsyntax/github-action-aws-static-stack/blob/master/cloudformation/cloudformation-s3bucket-stack.yml) and place it somewhere in your repo, for example in location `./cloudformation/cloudformation-s3bucket-stack.yml`
+Use the [provided CloudFormation stack](https://github.com/badsyntax/github-action-aws-static-stack/blob/master/cloudformation/cloudformation-s3bucket-stack.yml) and place it somewhere in your repo, for example in location `./cloudformation/cloudformation-s3bucket-stack.yml`
 
 You are welcome to change the stack as long as you don't change the following outputs:
 
@@ -47,7 +47,7 @@ You are welcome to change the stack as long as you don't change the following ou
 
 ### Step 2: Define your PR Comment Template
 
-Use the [provided template](https://github.com/badsyntax/github-action-aws-static-stack/blob/master/.github/preview-site-comment.md) and place it somewhere in your repo, for example in location `.github/preview-site-comment.md`
+Use the [provided pull request comment template](https://github.com/badsyntax/github-action-aws-static-stack/blob/master/.github/pr-comment-template.hbs) and place it somewhere in your repo, for example in location `.github/pr-comment-template.hbs`
 
 ### Step 3: Define the Actions YAML
 
