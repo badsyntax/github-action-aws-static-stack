@@ -109,7 +109,6 @@ Resources:
             S3OriginConfig:
               OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CFOriginAccessIdentity}'
         DefaultCacheBehavior:
-          CachePolicyId: !Ref CFStaticCachePolicy
           AllowedMethods:
             - 'HEAD'
             - 'GET'
@@ -117,6 +116,15 @@ Resources:
             - 'HEAD'
             - 'GET'
           Compress: true
+          ForwardedValues:
+            Cookies:
+              Forward: 'none'
+            Headers:
+              - 'Origin'
+            QueryString: false
+          DefaultTTL: 86400
+          MaxTTL: 31536000
+          MinTTL: 0
           TargetOriginId: !Sub 's3-origin-${S3Bucket}'
           ViewerProtocolPolicy: 'redirect-to-https'
         PriceClass: 'PriceClass_All'
@@ -144,7 +152,6 @@ Resources:
             S3OriginConfig:
               OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CFOriginAccessIdentity}'
         DefaultCacheBehavior:
-          CachePolicyId: !Ref CFStaticCachePolicy
           AllowedMethods:
             - 'HEAD'
             - 'GET'
@@ -152,6 +159,15 @@ Resources:
             - 'HEAD'
             - 'GET'
           Compress: true
+          ForwardedValues:
+            Cookies:
+              Forward: 'none'
+            Headers:
+              - 'Origin'
+            QueryString: false
+          DefaultTTL: 86400
+          MaxTTL: 31536000
+          MinTTL: 0
           TargetOriginId: !Sub 's3-origin-${S3Bucket}'
           ViewerProtocolPolicy: 'redirect-to-https'
           LambdaFunctionAssociations:
