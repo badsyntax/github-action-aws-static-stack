@@ -85,9 +85,10 @@ runs:
           CloudFrontPreviewHosts=${{ inputs.cloudfront-preview-hosts }}&
           CertificateARN=${{ inputs.certificate-arn }}&
           CloudFrontDefaultRootObject=${{ inputs.cloudfront-default-root-object }}&
-          LambdaVersion=${{ inputs.lambda-version }}
+          LambdaVersion=${{ inputs.lambda-version }}&
+          StackName=${{ inputs.cf-stack-name }}
 
-    - uses: badsyntax/github-action-aws-s3@v0.0.3
+    - uses: badsyntax/github-action-aws-s3@v0.0.5
       name: Sync mutable HTML files to S3
       id: sync-html-s3
       if: github.event_name != 'pull_request' || github.event.action != 'closed'
@@ -101,7 +102,7 @@ runs:
         strip-extension-glob: '**/**.html'
         cache-control: 'public,max-age=0,s-maxage=31536000,must-revalidate'
 
-    - uses: badsyntax/github-action-aws-s3@v0.0.3
+    - uses: badsyntax/github-action-aws-s3@v0.0.5
       name: Sync immutable files to S3
       id: sync-immutable-s3
       if: github.event_name != 'pull_request' || github.event.action != 'closed'
@@ -150,11 +151,11 @@ runs:
           {
             "changes": ${{ steps.update-stack.outputs.changes }},
             "outputs": ${{ steps.update-stack.outputs.outputs }},
-            "applyChangeSet": ${{ github.event_name != 'pull_request' && github.event_name != 'repository_dispatch' }},
+            "applyChangeSet": ${{ inputs.cf-apply-change-set }},
             "previewBranch": "${{ steps.vars.outputs.preview-branch }}"
           }
 
-    - uses: badsyntax/github-action-aws-s3@v0.0.3
+    - uses: badsyntax/github-action-aws-s3@v0.0.5
       name: Delete Preview Files in S3
       id: delete-preview-files
       if: github.event_name == 'pull_request' && github.event.action == 'closed' && inputs.delete-preview-site-on-pr-close == 'true'
