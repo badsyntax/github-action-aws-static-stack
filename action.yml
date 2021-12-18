@@ -175,7 +175,7 @@ runs:
         distribution-id: ${{ steps.cloudfront-distribution-id.outputs.distribution-id }}
         aws-region: ${{ inputs.aws-region }}
         origin-prefix: ${{ steps.vars.outputs.prefix }}
-        include-origin-prefix: ${{ github.event_name == 'pull_request' }}
+        include-origin-prefix: false
         invalidate-paths: ${{ steps.delete-preview-files.outputs.modified-keys }}
         default-root-object: ${{ inputs.cloudfront-default-root-object }}
 
