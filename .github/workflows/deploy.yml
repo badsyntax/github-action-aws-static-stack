@@ -43,7 +43,7 @@ jobs:
           cloudfront-default-root-object: 'index'
           certificate-arn: 'arn:aws:acm:us-east-1:008215002370:certificate/39df7626-7d2f-42e9-94f4-a3ce61ca3d5e'
           src-dir: './out'
-          static-files-glob: 'css/**'
+          static-files-glob: 'css/**/*'
           lambda-version: '1.0.4'
           delete-preview-site-on-pr-close: true
           comment-template: '.github/pr-comment-template.hbs'
