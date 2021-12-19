@@ -55,7 +55,7 @@ Use the [provided pull request comment template](https://github.com/badsyntax/gi
 name: 'Deploy'
 
 concurrency:
-  group: prod_deploy
+  group: deploy-${{ github.head_ref }}
   cancel-in-progress: false
 
 on:
@@ -71,19 +71,23 @@ jobs:
   deploy:
     name: 'Deploy'
     runs-on: ubuntu-20.04
-    if: github.actor != 'dependabot[bot]' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     steps:
       - uses: actions/checkout@v2
 
+      - name: Build
+        run: npm run build
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
+        if: github.actor != 'dependabot[bot]' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      - uses: badsyntax/github-action-aws-static-stack@v0.0.1
+      - uses: badsyntax/github-action-aws-static-stack@v0.0.8
         name: Deploy Site
+        if: github.actor != 'dependabot[bot]' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         with:
           cf-stack-name: 'github-action-example-aws-static-stack'
           cf-template: './cloudformation/cloudformation-s3bucket-stack.yml'
@@ -95,12 +99,12 @@ jobs:
           cloudfront-root-hosts: 'example.com'
           cloudfront-preview-hosts: '*.preview.example.com'
           cloudfront-default-root-object: 'index'
-          certificate-arn: 'arn:aws:acm:us-east-1:0001112222:certificate/1234abc-1234-1234-abcd-12345'
+          certificate-arn: ${{ secrets.ROOT_DOMAIN_CERTIFICATE_ARN }}
           src-dir: './out'
-          static-files-glob: 'css/**/*'
+          static-files-glob: '{css,js}/**/*'
           lambda-version: '1.0.0'
           delete-preview-site-on-pr-close: true
-          comment-template: '.github/comment-template.md'
+          comment-template: '.github/pr-comment-template.hbs'
 ```
 
 ### Step 4: Deploy
