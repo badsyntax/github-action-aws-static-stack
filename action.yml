@@ -167,18 +167,6 @@ runs:
         aws-region: ${{ inputs.aws-region }}
         prefix: ${{ steps.vars.outputs.prefix }}
 
-    - uses: badsyntax/github-action-aws-cloudfront@v0.0.3
-      name: Invalidate CloudFront Cache
-      id: invalidate-cloudfront-cache-delete
-      if: github.event_name == 'pull_request' && github.event.action == 'closed' && inputs.delete-preview-site-on-pr-close == 'true'
-      with:
-        distribution-id: ${{ steps.cloudfront-distribution-id.outputs.distribution-id }}
-        aws-region: ${{ inputs.aws-region }}
-        origin-prefix: ${{ steps.vars.outputs.prefix }}
-        include-origin-prefix: false
-        invalidate-paths: ${{ steps.delete-preview-files.outputs.modified-keys }}
-        default-root-object: ${{ inputs.cloudfront-default-root-object }}
-
     - uses: badsyntax/github-action-issue-comment@v0.0.3
       name: Delete comment
       if: github.event_name == 'pull_request' && github.event.action == 'closed' && inputs.delete-preview-site-on-pr-close == 'true'

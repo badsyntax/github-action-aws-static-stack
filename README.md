@@ -76,6 +76,7 @@ jobs:
 
       - name: Build
         run: npm run build
+        if: github.event.action != 'closed'
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
