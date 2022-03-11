@@ -126,7 +126,7 @@ runs:
               : '${{ steps.update-stack.outputs.CFDistributionRootId }}';
           core.setOutput('distribution-id', distributionId);
 
-    - uses: badsyntax/github-action-aws-cloudfront@v0.0.3
+    - uses: badsyntax/github-action-aws-cloudfront@v1.0.0
       name: Invalidate CloudFront Cache
       id: invalidate-cloudfront-cache
       if: github.event_name != 'pull_request' || github.event.action != 'closed'
