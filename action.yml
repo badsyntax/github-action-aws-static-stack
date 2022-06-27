@@ -88,7 +88,7 @@ runs:
           LambdaVersion=${{ inputs.lambda-version }}&
           StackName=${{ inputs.cf-stack-name }}
 
-    - uses: badsyntax/github-action-aws-s3@v0.0.10
+    - uses: badsyntax/github-action-aws-s3@v1.0.1
       name: Sync mutable HTML files to S3
       id: sync-html-s3
       if: github.event_name != 'pull_request' || github.event.action != 'closed'
@@ -102,7 +102,7 @@ runs:
         strip-extension-glob: '**/**.html'
         cache-control: 'public,max-age=0,s-maxage=31536000,must-revalidate'
 
-    - uses: badsyntax/github-action-aws-s3@v0.0.10
+    - uses: badsyntax/github-action-aws-s3@v1.0.1
       name: Sync immutable files to S3
       id: sync-immutable-s3
       if: github.event_name != 'pull_request' || github.event.action != 'closed'
@@ -155,7 +155,7 @@ runs:
             "previewBranch": "${{ steps.vars.outputs.preview-branch }}"
           }
 
-    - uses: badsyntax/github-action-aws-s3@v0.0.10
+    - uses: badsyntax/github-action-aws-s3@v1.0.1
       name: Delete Preview Files in S3
       id: delete-preview-files
       if: github.event_name == 'pull_request' && github.event.action == 'closed' && inputs.delete-preview-site-on-pr-close == 'true'
