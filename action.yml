@@ -70,7 +70,7 @@ runs:
           core.setOutput('preview-branch', prBranchName);
           core.setOutput('prefix', prefix);
 
-    - uses: badsyntax/github-action-aws-cloudformation@v0.0.6
+    - uses: badsyntax/github-action-aws-cloudformation@v1.0.3
       name: Update CloudFormation Stack
       id: update-stack
       with:
